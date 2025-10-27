@@ -45,13 +45,17 @@ fi
 R1=$(echo "$PAIR_FORMAT" | cut -d',' -f1)
 R2=$(echo "$PAIR_FORMAT" | cut -d',' -f2)
 
+# Escape special characters for sed
+R1_ESCAPED=$(printf '%s\n' "$R1" | sed 's/[.[\*^$()+?{|]/\\&/g')
+R2_ESCAPED=$(printf '%s\n' "$R2" | sed 's/[.[\*^$()+?{|]/\\&/g')
+
 # Clear output file
 > "$OUT"
 
 # Find all R1 files
 find "$DIR" -type f \( -name "*$R1.fq" -o -name "*$R1.fastq" -o -name "*$R1.fq.gz" -o -name "*$R1.fastq.gz" \) | sort | while IFS= read -r r1_file; do
     # Generate R2 filename by replacing R1 with R2
-    r2_file=$(echo "$r1_file" | sed "s/$R1/$R2/")
+    r2_file=$(echo "$r1_file" | sed "s/$R1_ESCAPED/$R2_ESCAPED/")
     
     # Check if R2 file exists
     if [ -f "$r2_file" ]; then

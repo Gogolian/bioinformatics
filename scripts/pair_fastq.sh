@@ -55,11 +55,28 @@ R2_ESCAPED=$(printf '%s\n' "$R2" | sed 's/[.[\*^$()+?{|]/\\&/g')
 # Find all R1 files
 find "$DIR" -type f \( -name "*$R1.fq" -o -name "*$R1.fastq" -o -name "*$R1.fq.gz" -o -name "*$R1.fastq.gz" \) | sort | while IFS= read -r r1_file; do
     # Generate R2 filename by replacing R1 with R2
-    r2_file=$(echo "$r1_file" | sed "s/$R1_ESCAPED/$R2_ESCAPED/")
-    
+    r2_file=$(printf '%s' "$r1_file" | sed "s/$R1_ESCAPED/$R2_ESCAPED/")
+
     # Check if R2 file exists
     if [ -f "$r2_file" ]; then
-        echo -e "$r1_file\t$r2_file" >> "$OUT"
+        # derive sample name from r1 filename (strip .gz, .fastq/.fq and the R1 suffix)
+        fname=$(basename "$r1_file")
+        base="$fname"
+        # remove .gz if present
+        case "$base" in
+            *.gz) base="${base%.gz}" ;;
+        esac
+        # remove extensions
+        case "$base" in
+            *.fastq) base="${base%.fastq}" ;;
+            *.fq) base="${base%.fq}" ;;
+        esac
+        # remove R1 suffix if present at end
+        # use sed with escaped pattern to avoid regex issues
+        sample=$(printf '%s' "$base" | sed "s/${R1_ESCAPED}$//")
+
+        # write SAMPLE_NAME <tab> R1 <tab> R2
+        printf '%s\t%s\t%s\n' "$sample" "$r1_file" "$r2_file" >> "$OUT"
     fi
 done
 
